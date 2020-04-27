@@ -7,3 +7,4 @@ services:
       DYFI_USER: yourusername
       DYFI_PASSWORD: yourpassword
       DYFI_HOSTNAMES: yours.dy.fi,alsoyours.dy.fi
+      RUST_LOG: info
