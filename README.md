@@ -50,3 +50,9 @@ A `docker-compose.yml` is also provided.
 
 * https://www.dy.fi/page/clients
 * https://www.dy.fi/page/specification
+
+## TODO
+
+* Tests
+* Memoize/cache current IP address and don't even talk to dy.fi if it hasn't changed.
+    * This may involve making dyfi-client a daemon.
