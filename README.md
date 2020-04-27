@@ -19,3 +19,24 @@ The variables are:
 
 Make sure you have the Rust toolchain installed and run `cargo build --release`.
 The resulting binary will be in `./target/release/`.
+
+## Running
+
+Options:
+
+1. Build and start a container from the included `Dockerfile`.
+The container runs the client in a wrapper script on a five day loop
+and exits in case of error.
+A `docker-compose.yml` is also provided.
+
+2. Set up a regular cronjob to run the script on a schedule of your choosing.
+
+### Example cronjob
+
+    # Run every Monday at 00:00
+    0 0 * * mon cd /path; ./dyfi-client
+
+## Dy.fi documentation
+
+* https://www.dy.fi/page/clients
+* https://www.dy.fi/page/specification

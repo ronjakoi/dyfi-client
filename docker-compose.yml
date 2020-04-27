@@ -1,0 +1,9 @@
+version: "3"
+services:
+  dyfi-client:
+    build: ./
+    image: dyfi-client:latest
+    environment:
+      DYFI_USER: yourusername
+      DYFI_PASSWORD: yourpassword
+      DYFI_HOSTNAMES: yours.dy.fi,alsoyours.dy.fi
