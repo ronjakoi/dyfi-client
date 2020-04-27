@@ -15,9 +15,19 @@ The variables are:
 * `DYFI_PASSWORD`
 * `DYFI_HOSTNAMES` -- a comma-separated list of hostnames associated with the selected username
 
+To control the log level, you may also set the `RUST_LOG` variable.
+By default only errors are logged, but `RUST_LOG=info` enables logging successes as well.
+
 ## Building
 
-Make sure you have the Rust toolchain installed and run `cargo build --release`.
+### Prerequisites:
+
+* Development packages for OpenSSL:
+    * `libssl-dev` on Debian and Ubuntu
+	* `openssl-dev` on Fedora
+* The Rust toolchain
+
+Run `cargo build --release`.
 The resulting binary will be in `./target/release/`.
 
 ## Running
