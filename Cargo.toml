@@ -1,0 +1,11 @@
+[package]
+name = "dyfi-client"
+version = "0.1.0"
+authors = ["Ronja Koistinen <ronja.koistinen@kapsi.fi>"]
+edition = "2018"
+
+[dependencies]
+reqwest = { version = "^0.10", features = ["blocking"] }
+dotenv = "^0.15"
+log = "^0.4"
+env_logger = "^0.7"
