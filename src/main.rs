@@ -50,6 +50,30 @@ impl DyfiResponse {
     }
 }
 
+enum DyfiResponseCode {
+    BadAuth = 1,
+    NoHost = 2,
+    NotFQDN = 3,
+    BadIP = 4,
+    Ok = 0,
+    DNSErr = 5,
+    Abuse = 6,
+}
+
+impl From<DyfiResponse> for DyfiResponseCode {
+    fn from(d: DyfiResponse) -> Self {
+        match d {
+            DyfiResponse::BadAuth => Self::BadAuth,
+            DyfiResponse::NoHost => Self::NoHost,
+            DyfiResponse::NotFQDN => Self::NotFQDN,
+            DyfiResponse::BadIP(_) => Self::BadIP,
+            DyfiResponse::DNSErr => Self::DNSErr,
+            DyfiResponse::Abuse => Self::Abuse,
+            _ => Self::Ok,
+        }
+    }
+}
+
 struct DyfiError(String);
 
 impl From<dotenv::Error> for DyfiError {
@@ -72,7 +96,7 @@ impl std::fmt::Display for DyfiError {
 
 const API: &str = "https://www.dy.fi/nic/update";
 
-fn run() -> Result<(), DyfiError> {
+fn run() -> Result<DyfiResponseCode, DyfiError> {
     env_logger::init();
     dotenv::dotenv().ok();
     let user = dotenv::var("DYFI_USER")?;
@@ -91,15 +115,15 @@ fn run() -> Result<(), DyfiError> {
 
     let dyfi_response = DyfiResponse::from(&response?.text()?);
     dyfi_response.log();
-    Ok(())
+    Ok(DyfiResponseCode::from(dyfi_response))
 }
 
 fn main() {
     std::process::exit(match run() {
-        Ok(_) => 0,
+        Ok(res) => res as i32,
         Err(err) => {
             error!("{}", err);
-            1
+            10
         }
     })
 }
