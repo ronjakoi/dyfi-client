@@ -20,7 +20,11 @@ By default only errors are logged, but `RUST_LOG=info` enables logging successes
 
 ## Building
 
-### Prerequisites:
+Easiest is to build an image from the included `Dockerfile`.
+
+### Building conventionally on host OS
+
+Install these prerequisites:
 
 * Development packages for OpenSSL:
     * `libssl-dev` on Debian and Ubuntu
@@ -32,19 +36,16 @@ The resulting binary will be in `./target/release/`.
 
 ## Running
 
+The dy.fi client is a daemon that runs on a loop and keeps track of some state.
+State is not saved on disk, so starting the daemon always performs an update first
+and then sleeps.
+
 Options:
 
 1. Build and start a container from the included `Dockerfile`.
-The container runs the client in a wrapper script on a five day loop
-and exits in case of error.
 A `docker-compose.yml` is also provided.
 
-2. Set up a regular cronjob to run the script on a schedule of your choosing.
-
-### Example cronjob
-
-    # Run every Monday at 00:00
-    0 0 * * mon cd /path; ./dyfi-client
+2. Run the daemon on your host system, e.g. as a systemd unit.
 
 ## Dy.fi documentation
 
@@ -53,6 +54,6 @@ A `docker-compose.yml` is also provided.
 
 ## TODO
 
-* Tests
-* Memoize/cache current IP address and don't even talk to dy.fi if it hasn't changed.
-    * This may involve making dyfi-client a daemon.
+* Tests.
+* Maybe save last performed update on disk. This would require a volume in Docker.
+* Handle multiple hostnames a bit better.

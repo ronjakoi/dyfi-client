@@ -22,4 +22,4 @@ COPY --from=builder --chown=dyfi /workdir/target/release/dyfi-client ./
 COPY --chown=dyfi start.sh ./
 USER dyfi
 
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["/app/dyfi-client"]
