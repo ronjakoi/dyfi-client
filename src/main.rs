@@ -17,6 +17,7 @@
 #[macro_use]
 extern crate log;
 
+use std::collections::HashMap;
 use std::net::{IpAddr, ToSocketAddrs};
 use std::thread::sleep;
 use std::time::{Instant, Duration};
@@ -98,10 +99,14 @@ fn run() -> Result<DyfiResponseCode, DyfiError> {
         .build()?;
 
     let mut previous_update_time: Option<Instant> = None;
-    let mut previous_ip: Vec<_> = match resolve_host(&config.hostnames[0]) {
-        Err(_) => vec![],
-        Ok(ips) => ips.collect(),
-    };
+    let mut previous_ips: HashMap<String, Vec<IpAddr>> = HashMap::new();
+    for host in &config.hostnames {
+        let ips = match resolve_host(&host) {
+            Ok(ips) => ips.collect(),
+            Err(_) => vec![]
+        };
+        previous_ips.insert(host.clone(), ips);
+    }
 
     Ok(loop {
         debug!("Getting current IP address from {}", PUBLIC_IP_API);
@@ -112,21 +117,21 @@ fn run() -> Result<DyfiResponseCode, DyfiError> {
             Some(prev_update) => {
                 if Instant::now() - prev_update < Duration::from_secs(FORCE_UPDATE_INTERVAL) {
                     // there is a previous update and it was less than FORCE_UPDATE_INTERVAL ago
-                    if previous_ip.is_empty() {
-                        // the hostname does not currently resolve to any IP
-                        info!("No current IP for hostnames, updating...");
+                    if previous_ips.iter().any(|(_, v)| v.is_empty()) {
+                        // any one or several of the hostnames does not have a previous ip
+                        info!("No current IP for one or more hostnames, updating...");
                         LoopStatus::Action(do_update(&client, &config))
                     } else {
                         // resolve all hostnames configured
-                        let mut current_ips = config.hostnames
+                        let mut resolved_ips = config.hostnames
                             .iter()
                             .map(|h| resolve_host(h))
                             .filter_map(Result::ok)
                             .flatten();
-                        // if any hostname resolves to any ip other than the previous known ip,
+                        // if any hostname resolves to any ip other than my current ip,
                         // run an update
-                        if current_ips.any(|ip| ip != my_ip) {
-                            info!("Hostname currently resolves to outdated IP, updating...");
+                        if resolved_ips.any(|ip| ip != my_ip) {
+                            info!("One or more hostnames have an outdated IP, updating...");
                             LoopStatus::Action(do_update(&client, &config))
                         } else {
                             // all IP addresses resolve to my_ip, do nothing
@@ -155,7 +160,7 @@ fn run() -> Result<DyfiResponseCode, DyfiError> {
                     // New IP has been set. Log it. Set previous_ip and previous_update_time.
                     DyfiResponse::Good(new_ip) => {
                         response.log();
-                        previous_ip = vec![new_ip];
+                        previous_ips.iter_mut().for_each(|(_, val)| *val = vec![new_ip]);
                         previous_update_time = Some(Instant::now());
                     },
                     // No change. Log it. Set previous_update_time.
