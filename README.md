@@ -13,10 +13,22 @@ The variables are:
 
 * `DYFI_USER`
 * `DYFI_PASSWORD`
-* `DYFI_HOSTNAMES` -- a comma-separated list of hostnames associated with the selected username
+* `DYFI_HOSTNAMES` – a comma-separated list of hostnames associated with the selected username
 
 To control the log level, you may also set the `RUST_LOG` variable.
-By default only errors are logged, but `RUST_LOG=info` enables logging successes as well.
+By default only errors are logged, but `RUST_LOG=dyfi_client=info` enables logging successes as well.
+
+## Exit statuses
+
+| Status  | Meaning                                                    |
+| ------- | ---------------------------------------------------------- |
+| 0       | OK                                                         |
+| 1       | Bad authentication.                                        |
+| 2       | No hostname given or hostname not allocated for user.      |
+| 3       | Hot a valid FQDN.                                          |
+| 4       | IP not valid or not registered to a Finnish organisation.  |
+| 5       | Request failed due to technical problem.                   |
+| 6       | Request denied due to abuse.                               |
 
 ## Building
 
