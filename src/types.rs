@@ -77,6 +77,7 @@ impl DyfiResponse {
     }
 }
 
+#[derive(Debug)]
 pub enum DyfiResponseCode {
     BadAuth = 1,
     NoHost = 2,

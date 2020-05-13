@@ -82,7 +82,9 @@ const LOOP_DELAY: u64 = 3600; // seconds
 const FORCE_UPDATE_INTERVAL: u64 = 3600 * 24 * 5;
 
 fn run() -> Result<DyfiResponseCode, DyfiError> {
-    dotenv::dotenv().unwrap();
+    env_logger::init();
+    debug!("Reading configuration from environment...");
+    dotenv::dotenv().ok();
     let config = Config {
         dyfi_api: dotenv::var("DYFI_API").unwrap_or(DYFI_API.to_string()),
         user: dotenv::var("DYFI_USER")?,
@@ -92,27 +94,29 @@ fn run() -> Result<DyfiResponseCode, DyfiError> {
             .map(|x| x.to_string())
             .collect(),
     };
-    env_logger::init();
 
     // init blocking reqwest http client
+    debug!("Initializing HTTP client...");
     let client = ClientBuilder::new()
         .user_agent("Dyfi-client-rs")
         .build()?;
 
     let mut previous_update_time: Option<Instant> = None;
     let mut previous_ips: HashMap<String, Vec<IpAddr>> = HashMap::new();
+    debug!("Resolving hostname(s)...");
     for host in &config.hostnames {
         let ips = match resolve_host(&host) {
             Ok(ips) => ips.collect(),
             Err(_) => vec![]
         };
+        debug!("{} currently resolves to {:?}", &host, ips);
         previous_ips.insert(host.clone(), ips);
     }
 
     Ok(loop {
-        debug!("Getting current IP address from {}", PUBLIC_IP_API);
+        debug!("Getting my current IP address from {}", PUBLIC_IP_API);
         let my_ip: IpAddr = get_current_ip(&client)?;
-        debug!("Current IP address is {}", my_ip);
+        debug!("My current IP address is {}", my_ip);
 
         let dyfi_status: LoopStatus = match previous_update_time {
             Some(prev_update) => {
@@ -193,7 +197,7 @@ fn main() {
     std::process::exit(match run() {
         Ok(res) => res as i32,
         Err(err) => {
-            error!("{}", err);
+            error!("Initialization error: {}", err);
             10 // initialization error from dotenv or reqwest
         }
     })
