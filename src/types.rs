@@ -24,6 +24,7 @@ pub enum LoopStatus {
 }
 
 pub struct Config {
+    pub dyfi_api: String,
     pub user: String,
     pub password: String,
     pub hostnames: Vec<String>,

@@ -40,7 +40,7 @@ fn resolve_host(host: &str) -> std::io::Result<impl Iterator<Item = IpAddr>> {
 
 fn do_update(client: &reqwest::blocking::Client, config: &Config) -> Result<DyfiResponse, DyfiError> {
     let http_response = client
-        .get(DYFI_API)
+        .get(&config.dyfi_api)
         .basic_auth(&config.user, Some(&config.password))
         .query(&[("hostname", &config.hostnames.join(","))])
         .send();
@@ -84,6 +84,7 @@ const FORCE_UPDATE_INTERVAL: u64 = 3600 * 24 * 5;
 fn run() -> Result<DyfiResponseCode, DyfiError> {
     dotenv::dotenv().unwrap();
     let config = Config {
+        dyfi_api: dotenv::var("DYFI_API").unwrap_or(DYFI_API.to_string()),
         user: dotenv::var("DYFI_USER")?,
         password: dotenv::var("DYFI_PASSWORD")?,
         hostnames: dotenv::var("DYFI_HOSTNAMES")?
