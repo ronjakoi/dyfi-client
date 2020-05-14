@@ -20,15 +20,16 @@ By default only errors are logged, but `RUST_LOG=dyfi_client=info` enables loggi
 
 ## Exit statuses
 
-| Status  | Meaning                                                    |
-| ------- | ---------------------------------------------------------- |
-| 0       | OK                                                         |
-| 1       | Bad authentication.                                        |
-| 2       | No hostname given or hostname not allocated for user.      |
-| 3       | Hot a valid FQDN.                                          |
-| 4       | IP not valid or not registered to a Finnish organisation.  |
-| 5       | Request failed due to technical problem.                   |
-| 6       | Request denied due to abuse.                               |
+| Status  | Meaning                                                      |
+| ------- | ------------------------------------------------------------ |
+| 0       | OK                                                           |
+| 1       | Bad authentication.                                          |
+| 2       | No hostname given or hostname not allocated for user.        |
+| 3       | Hot a valid FQDN.                                            |
+| 4       | IP not valid or not registered to a Finnish organisation.    |
+| 5       | Request failed due to technical problem.                     |
+| 6       | Request denied due to abuse.                                 |
+| 10      | Initialization error - usually due to environment variables. |
 
 ## Building
 
