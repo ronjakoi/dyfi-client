@@ -25,7 +25,7 @@ By default only errors are logged, but `RUST_LOG=dyfi_client=info` enables loggi
 | 0       | OK                                                           |
 | 1       | Bad authentication.                                          |
 | 2       | No hostname given or hostname not allocated for user.        |
-| 3       | Hot a valid FQDN.                                            |
+| 3       | Not a valid FQDN.                                            |
 | 4       | IP not valid or not registered to a Finnish organisation.    |
 | 5       | Request failed due to technical problem.                     |
 | 6       | Request denied due to abuse.                                 |
@@ -70,3 +70,4 @@ A `docker-compose.yml` is also provided.
 * Tests.
 * Maybe save last performed update on disk. This would require a volume in Docker.
 * Handle multiple hostnames a bit better.
+* Pre-built Docker image on e.g. Dockerhub.
