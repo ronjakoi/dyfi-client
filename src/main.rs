@@ -1,5 +1,5 @@
 // Dyfi-client, a dynamic DNS updater for the dy.fi service.
-// Copyright (C) 2020  Ronja Koistinen
+// Copyright (C) 2022  Ronja Koistinen
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,188 +17,40 @@
 #[macro_use]
 extern crate log;
 
-use std::collections::HashMap;
-use std::net::{IpAddr, ToSocketAddrs};
-use std::thread::sleep;
-use std::time::{Instant, Duration};
-
-use reqwest::blocking::ClientBuilder;
+#[cfg(test)]
+mod tests;
 
 mod types;
-use types::{Config, LoopStatus, DyfiError, DyfiResponse, DyfiResponseCode};
+mod network;
+mod update_loop;
+use types::Config;
+use update_loop::run;
 
-// Resolve a hostname given as string to an IP address or several.
-// Returns a Result containing an Ok with an iterator of IP addresses,
-// or an Err if host resolution failed.
-fn resolve_host(host: &str) -> std::io::Result<impl Iterator<Item = IpAddr>> {
-    Ok(
-        (host, 0)
-        .to_socket_addrs()?
-        .map(|x| x.ip())
-    )
-}
-
-fn do_update(client: &reqwest::blocking::Client, config: &Config) -> Result<DyfiResponse, DyfiError> {
-    let http_response = client
-        .get(&config.dyfi_api)
-        .basic_auth(&config.user, Some(&config.password))
-        .query(&[("hostname", &config.hostnames.join(","))])
-        .send();
-
-    Ok(DyfiResponse::from(&http_response?.text()?))
-}
-
-#[inline]
-fn do_sleep() {
-    debug!("Sleeping {} seconds...", LOOP_DELAY);
-    sleep(Duration::from_secs(LOOP_DELAY));
-}
-
-fn get_current_ip(client: &reqwest::blocking::Client) -> Result<IpAddr, DyfiError> {
-    let response = client
-        .get(PUBLIC_IP_API)
-        .send()?;
-    let status = response.status();
-    if !status.is_success() {
-        Err(DyfiError(format!("Error fetching current IP. Server responded with status {}", status)))
-    } else {
-        match response.text() {
-            Ok(text) => match text.trim().parse() {
-                Ok(ip) => Ok(ip),
-                Err(e) => Err(
-                    DyfiError(format!("Error parsing current IP: {}", e))
-                )
-            },
-            Err(e) => Err(
-                DyfiError(format!("Error while fetching current IP: {}", e))
-            ),
-        }
-    }
-}
-
-const PUBLIC_IP_API: &str = "http://checkip.amazonaws.com/";
-const DYFI_API: &str = "https://www.dy.fi/nic/update";
+const DEFAULT_PUBLIC_IP_API: &str = "http://checkip.amazonaws.com/";
+const DEFAULT_DYFI_API: &str = "https://www.dy.fi/nic/update";
 const LOOP_DELAY: u64 = 3600; // seconds
 const FORCE_UPDATE_INTERVAL: u64 = 3600 * 24 * 5;
 
-fn run() -> Result<DyfiResponseCode, DyfiError> {
+fn main() {
     env_logger::init();
     debug!("Reading configuration from environment...");
     dotenv::dotenv().ok();
+
     let config = Config {
-        dyfi_api: dotenv::var("DYFI_API").unwrap_or(DYFI_API.to_string()),
-        user: dotenv::var("DYFI_USER")?,
-        password: dotenv::var("DYFI_PASSWORD")?,
-        hostnames: dotenv::var("DYFI_HOSTNAMES")?
+        dyfi_api: dotenv::var("DYFI_API").unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
+        public_ip_api: dotenv::var("PUBLIC_IP_API").unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
+        user: dotenv::var("DYFI_USER").expect("DYFI_USERNAME not set"),
+        password: dotenv::var("DYFI_PASSWORD").expect("DYFI_PASSWORD not set"),
+        hostnames: dotenv::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set")
             .split(',')
             .map(|x| x.to_string())
             .collect(),
     };
-
-    // init blocking reqwest http client
-    debug!("Initializing HTTP client...");
-    let client = ClientBuilder::new()
-        .user_agent("Dyfi-client-rs")
-        .build()?;
-
-    let mut previous_update_time: Option<Instant> = None;
-    let mut previous_ips: HashMap<String, Vec<IpAddr>> = HashMap::new();
-    debug!("Resolving hostname(s)...");
-    for host in &config.hostnames {
-        let ips = match resolve_host(&host) {
-            Ok(ips) => ips.collect(),
-            Err(_) => vec![]
-        };
-        debug!("{} currently resolves to {:?}", &host, ips);
-        previous_ips.insert(host.clone(), ips);
-    }
-
-    Ok(loop {
-        debug!("Getting my current IP address from {}", PUBLIC_IP_API);
-        let my_ip: IpAddr = get_current_ip(&client)?;
-        debug!("My current IP address is {}", my_ip);
-
-        let dyfi_status: LoopStatus = match previous_update_time {
-            Some(prev_update) => {
-                if Instant::now() - prev_update < Duration::from_secs(FORCE_UPDATE_INTERVAL) {
-                    // there is a previous update and it was less than FORCE_UPDATE_INTERVAL ago
-                    if previous_ips.iter().any(|(_, v)| v.is_empty()) {
-                        // any one or several of the hostnames does not have a previous ip
-                        info!("No current IP for one or more hostnames, updating...");
-                        LoopStatus::Action(do_update(&client, &config))
-                    } else {
-                        // resolve all hostnames configured
-                        let mut resolved_ips = config.hostnames
-                            .iter()
-                            .map(|h| resolve_host(h))
-                            .filter_map(Result::ok)
-                            .flatten();
-                        // if any hostname resolves to any ip other than my current ip,
-                        // run an update
-                        if resolved_ips.any(|ip| ip != my_ip) {
-                            info!("One or more hostnames have an outdated IP, updating...");
-                            LoopStatus::Action(do_update(&client, &config))
-                        } else {
-                            // all IP addresses resolve to my_ip, do nothing
-                            debug!("IP address {} is up to date", my_ip);
-                            LoopStatus::Nop
-                        }
-                    }
-                } else {
-                    // previous update was more than FORCE_UPDATE_INTERVAL ago
-                    info!("More than {} seconds passed, forcing update...", FORCE_UPDATE_INTERVAL);
-                    LoopStatus::Action(do_update(&client, &config))
-                }
-            },
-            None => {
-                // There is no previous update during the runtime of the program.
-                // We don't know how long until dy.fi releases the DNS name,
-                // so we run an update here.
-                info!("No update performed yet, time until release unknown. Updating...");
-                LoopStatus::Action(do_update(&client, &config))
-            }
-        };
-
-        match dyfi_status {
-            LoopStatus::Action(Ok(response)) => {
-                match response {
-                    // New IP has been set. Log it. Set previous_ip and previous_update_time.
-                    DyfiResponse::Good(new_ip) => {
-                        response.log();
-                        previous_ips.iter_mut().for_each(|(_, val)| *val = vec![new_ip]);
-                        previous_update_time = Some(Instant::now());
-                    },
-                    // No change. Log it. Set previous_update_time.
-                    DyfiResponse::NoChg => {
-                        response.log();
-                        previous_update_time = Some(Instant::now());
-                    },
-                    // Dy.fi returned a bad status. Log it and break the program loop.
-                    _ => {
-                        response.log();
-                        error!("Unrecoverable error, exiting...");
-                        break DyfiResponseCode::from(response);
-                    }
-                }
-            },
-            // do_update() returned an error. This is probably a temporary
-            // HTTP error. Log it.
-            LoopStatus::Action(Err(e)) => {
-                error!("{}", e);
-            },
-            LoopStatus::Nop => (),
-        }
-        // Sleep for LOOP_DELAY seconds.
-        do_sleep();
-    })
-}
-
-fn main() {
-    std::process::exit(match run() {
+    std::process::exit(match run(config) {
         Ok(res) => res as i32,
         Err(err) => {
-            error!("Initialization error: {}", err);
-            10 // initialization error from dotenv or reqwest
+            error!("{}", err);
+            10
         }
     })
 }

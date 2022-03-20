@@ -16,8 +16,6 @@
 
 use std::net::IpAddr;
 
-use super::PUBLIC_IP_API;
-
 pub enum LoopStatus {
     Nop,
     Action(Result<DyfiResponse, DyfiError>),
@@ -25,6 +23,7 @@ pub enum LoopStatus {
 
 pub struct Config {
     pub dyfi_api: String,
+    pub public_ip_api: String,
     pub user: String,
     pub password: String,
     pub hostnames: Vec<String>,
@@ -40,21 +39,22 @@ pub enum DyfiResponse {
     Good(IpAddr),
     DNSErr,
     Abuse,
+    Other(String)
 }
 
 impl DyfiResponse {
-    pub fn from(s: &str) -> Self {
-        let s: Vec<&str> = s.trim().split_whitespace().collect();
-        match s[..] {
+    pub fn from(s: String) -> Self {
+        let result: Vec<&str> = s.trim().split_whitespace().collect();
+        match result[..] {
             ["badauth"] => Self::BadAuth,
             ["nohost"] => Self::NoHost,
             ["notfq"] => Self::NotFQDN,
-            ["badip", ..] => Self::BadIP(s[1].parse().unwrap()),
+            ["badip", ..] => Self::BadIP(result[1].parse().unwrap()),
             ["nochg"] => Self::NoChg,
-            ["good", ..] => Self::Good(s[1].parse().unwrap()),
+            ["good", ..] => Self::Good(result[1].parse().unwrap()),
             ["dnserr"] => Self::DNSErr,
             ["abuse"] => Self::Abuse,
-            _ => unreachable!(),
+            _ => Self::Other(s),
         }
     }
 
@@ -73,6 +73,7 @@ impl DyfiResponse {
             Self::Good(ip) => info!("dy.fi replied: Hostname(s) pointed at new address {}", ip),
             Self::DNSErr => error!("dy.fi replied: Request failed due to technical problem"),
             Self::Abuse => error!("dy.fi replied: Request denied due to abuse"),
+            Self::Other(s) => error!("dy.fi replied with other message: {}", s)
         }
     }
 }
@@ -118,8 +119,8 @@ impl From<reqwest::Error> for DyfiError {
 }
 
 impl From<std::net::AddrParseError> for DyfiError {
-    fn from(_e: std::net::AddrParseError) -> Self {
-        DyfiError(format!("Error parsing current IP address returned from {}", PUBLIC_IP_API))
+    fn from(e: std::net::AddrParseError) -> Self {
+        DyfiError(format!("Error parsing current IP address: {}", e))
     }
 }
 
