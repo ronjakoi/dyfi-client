@@ -1,12 +1,18 @@
 use crate::types::{Config, DyfiError, DyfiResponse, DyfiResponseCode, LoopStatus};
-use crate::{FORCE_UPDATE_INTERVAL, LOOP_DELAY};
+use crate::{FORCE_UPDATE_INTERVAL};
 use reqwest::blocking::ClientBuilder;
 use std::collections::HashMap;
 use std::net::{IpAddr, ToSocketAddrs};
-use std::thread::sleep;
 use std::time::{Duration, Instant};
 
+
+#[cfg(not(test))]
+use crate::LOOP_DELAY;
+#[cfg(not(test))]
+use std::thread::sleep;
+
 #[inline]
+#[cfg(not(test))]
 fn do_sleep(duration: u64) {
     debug!("Sleeping {} seconds...", duration);
     sleep(Duration::from_secs(duration));

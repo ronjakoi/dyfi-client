@@ -29,8 +29,10 @@ use client::Dyfi;
 
 const DEFAULT_PUBLIC_IP_API: &str = "http://checkip.amazonaws.com/";
 const DEFAULT_DYFI_API: &str = "https://www.dy.fi/nic/update";
-const LOOP_DELAY: u64 = 3600; // seconds
 const FORCE_UPDATE_INTERVAL: u64 = 3600 * 24 * 5;
+
+#[cfg(not(test))]
+const LOOP_DELAY: u64 = 3600; // seconds
 
 fn main() {
     env_logger::init();

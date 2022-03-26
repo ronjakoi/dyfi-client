@@ -78,7 +78,7 @@ impl DyfiResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum DyfiResponseCode {
     // These are from the dy.fi API
     BadAuth = 1,
