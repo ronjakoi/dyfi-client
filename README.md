@@ -1,3 +1,4 @@
+[![Tests](https://github.com/ronjakoi/dyfi-client/actions/workflows/rust.yml/badge.svg)](https://github.com/ronjakoi/dyfi-client/actions/workflows/rust.yml)
 # Dy.fi client
 
 This a dynamic DNS updater client for the Finnish [dy.fi](https://www.dy.fi/) service.
