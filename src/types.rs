@@ -1,5 +1,5 @@
 // Dyfi-client, a dynamic DNS updater for the dy.fi service.
-// Copyright (C) 2020  Ronja Koistinen
+// Copyright (C) 2022  Ronja Koistinen
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
