@@ -1,4 +1,6 @@
 [![Tests](https://github.com/ronjakoi/dyfi-client/actions/workflows/rust.yml/badge.svg)](https://github.com/ronjakoi/dyfi-client/actions/workflows/rust.yml)
+[![Coverage Status](https://coveralls.io/repos/github/ronjakoi/dyfi-client/badge.svg?branch=master)](https://coveralls.io/github/ronjakoi/dyfi-client?branch=master)
+
 # Dy.fi client
 
 This a dynamic DNS updater client for the Finnish [dy.fi](https://www.dy.fi/) service.

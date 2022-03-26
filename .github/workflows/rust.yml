@@ -8,6 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   build:
@@ -17,6 +18,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
+  check:
+    name: Code coverage
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install tarpaulin
+      run: cargo install cargo-tarpaulin
+    - name: Run tarpaulin
+      run: >
+        cargo tarpaulin
+        --ciserver github-actions
+        --coveralls ${{ secrets.COVERALLS_TOKEN }}
