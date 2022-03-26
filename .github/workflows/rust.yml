@@ -25,6 +25,7 @@ jobs:
     name: Code coverage
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v2
     - name: Install tarpaulin
       run: cargo install cargo-tarpaulin
     - name: Run tarpaulin
