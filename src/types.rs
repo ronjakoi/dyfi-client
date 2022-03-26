@@ -48,7 +48,7 @@ impl DyfiResponse {
         match result[..] {
             ["badauth"] => Self::BadAuth,
             ["nohost"] => Self::NoHost,
-            ["notfq"] => Self::NotFQDN,
+            ["notfqdn"] => Self::NotFQDN,
             ["badip", ..] => Self::BadIP(result[1].parse().unwrap()),
             ["nochg"] => Self::NoChg,
             ["good", ..] => Self::Good(result[1].parse().unwrap()),
