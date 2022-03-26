@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+#![warn(clippy::pedantic)]
+
 #[macro_use]
 extern crate log;
 
@@ -21,10 +23,9 @@ extern crate log;
 mod tests;
 
 mod types;
-mod network;
-mod update_loop;
+mod client;
 use types::Config;
-use update_loop::run;
+use client::Dyfi;
 
 const DEFAULT_PUBLIC_IP_API: &str = "http://checkip.amazonaws.com/";
 const DEFAULT_DYFI_API: &str = "https://www.dy.fi/nic/update";
@@ -43,14 +44,16 @@ fn main() {
         password: dotenv::var("DYFI_PASSWORD").expect("DYFI_PASSWORD not set"),
         hostnames: dotenv::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set")
             .split(',')
-            .map(|x| x.to_string())
+            .map(std::string::ToString::to_string)
             .collect(),
     };
-    std::process::exit(match run(config) {
-        Ok(res) => res as i32,
-        Err(err) => {
-            error!("{}", err);
-            10
+    let mut dyfi = match Dyfi::from(config) {
+        Ok(dyfi) => dyfi,
+        Err(e) => {
+            error!("Error initializing client: {}", e);
+            std::process::exit(10);
         }
-    })
+    };
+
+    std::process::exit(dyfi.run() as i32)
 }

@@ -1,6 +1,6 @@
 [package]
 name = "dyfi-client"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Ronja Koistinen <ronja.koistinen@kapsi.fi>"]
 edition = "2018"
 
@@ -9,4 +9,4 @@ reqwest = { version = "^0.11", features = ["blocking"] }
 dotenv = "^0.15"
 log = "^0.4"
 env_logger = "^0.8"
-mockito = "^0.28"
+mockito = "^0.31"

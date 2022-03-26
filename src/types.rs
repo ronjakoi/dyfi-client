@@ -80,6 +80,7 @@ impl DyfiResponse {
 
 #[derive(Debug)]
 pub enum DyfiResponseCode {
+    // These are from the dy.fi API
     BadAuth = 1,
     NoHost = 2,
     NotFQDN = 3,
@@ -87,6 +88,9 @@ pub enum DyfiResponseCode {
     Ok = 0,
     DNSErr = 5,
     Abuse = 6,
+    // This one is not
+    #[allow(dead_code)]
+    OtherNonFatal = 99,
 }
 
 impl From<DyfiResponse> for DyfiResponseCode {
