@@ -7,7 +7,8 @@ RUN apt-get -qq update && \
 WORKDIR /workdir
 COPY Cargo.lock Cargo.toml  ./
 COPY src/ ./src
-RUN cargo build --release -q
+RUN rustc --version && cargo build --release
+RUN cargo test --release
 
 FROM debian:stable-slim
 RUN apt-get -qq update && \
@@ -18,8 +19,7 @@ RUN useradd -r -U dyfi
 
 WORKDIR /app
 
-COPY --from=builder --chown=dyfi /workdir/target/release/dyfi-client ./
-COPY --chown=dyfi start.sh ./
+COPY --from=builder /workdir/target/release/dyfi-client ./
 USER dyfi
 
 ENTRYPOINT ["/app/dyfi-client"]
