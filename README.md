@@ -2,7 +2,8 @@
 # Dy.fi client
 
 This a dynamic DNS updater client for the Finnish [dy.fi](https://www.dy.fi/) service.
-It is written in the Rust language.
+It is written in the Rust language and a fair bit overengineered.
+It serves as a bit of a portfolio project.
 
 ## Configuration
 
@@ -68,7 +69,4 @@ A `docker-compose.yml` is also provided.
 
 ## TODO
 
-* Tests.
 * Maybe save last performed update on disk. This would require a volume in Docker.
-* Handle multiple hostnames a bit better.
-* Pre-built Docker image on e.g. Dockerhub.
