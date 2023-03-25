@@ -1,5 +1,5 @@
 // Dyfi-client, a dynamic DNS updater for the dy.fi service.
-// Copyright (C) 2022  Ronja Koistinen
+// Copyright (C) 2020-2023  Ronja Koistinen
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ impl DyfiResponse {
             Self::Good(ip) => info!("dy.fi replied: Hostname(s) pointed at new address {}", ip),
             Self::DNSErr => error!("dy.fi replied: Request failed due to technical problem"),
             Self::Abuse => error!("dy.fi replied: Request denied due to abuse"),
-            Self::Other(s) => error!("dy.fi replied with other message: {}", s)
+            Self::Other(s) => error!("dy.fi replied with other message: '{}'", s)
         }
     }
 }
@@ -110,8 +110,8 @@ impl From<DyfiResponse> for DyfiResponseCode {
 #[derive(Debug)]
 pub struct DyfiError(pub String);
 
-impl From<dotenv::Error> for DyfiError {
-    fn from(e: dotenv::Error) -> Self {
+impl From<dotenvy::Error> for DyfiError {
+    fn from(e: dotenvy::Error) -> Self {
         DyfiError(e.to_string())
     }
 }

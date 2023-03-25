@@ -1,5 +1,5 @@
 // Dyfi-client, a dynamic DNS updater for the dy.fi service.
-// Copyright (C) 2022  Ronja Koistinen
+// Copyright (C) 2020-2023  Ronja Koistinen
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 use crate::client::Dyfi;
 use crate::types::Config;
 use crate::types::DyfiResponseCode;
-use mockito::{mock, Matcher, Mock};
+use mockito::{Matcher, Mock};
 use std::env;
 use std::sync::Once;
 
@@ -33,45 +33,59 @@ fn log_init() {
     });
 }
 
-fn make_test_config() -> Config {
-    Config {
-        dyfi_api: format!("{}{}", mockito::server_url(), "/nic/update"),
-        public_ip_api: mockito::server_url(),
-        user: String::from("mockuser"),
-        password: String::from("mockpassword"),
-        hostnames: vec![
-            String::from("mock.dy.fi"),
-            String::from("mock-some-more.dy.fi"),
-        ],
+struct TestServer {
+    server: mockito::ServerGuard,
+}
+
+impl TestServer {
+    pub fn new() -> Self {
+        TestServer {
+            server: mockito::Server::new()
+        }
+    }
+
+    pub fn make_test_config(&self) -> Config {
+        Config {
+            dyfi_api: format!("{}{}", self.server.url(), "/nic/update"),
+            public_ip_api: self.server.url(),
+            user: String::from("mockuser"),
+            password: String::from("mockpassword"),
+            hostnames: vec![
+                String::from("mock.dy.fi"),
+                String::from("mock-some-more.dy.fi"),
+            ],
+        }
+    }
+
+    pub fn dyfi_mock_base(&mut self) -> Mock {
+        self.server.mock("GET", "/nic/update")
+            .with_status(200)
+            .with_header("content-type", "text/plain")
+            .match_query(Matcher::UrlEncoded(
+                "hostname".to_string(),
+                "mock.dy.fi,mock-some-more.dy.fi".to_string(),
+            ))
+            .expect(1)
+    }
+
+    fn get_ip_mock(&mut self) -> Mock {
+        self.server.mock("GET", "/")
+            .with_status(200)
+            .with_header("content-type", "text/plain")
+            .with_body(MOCK_IP)
+            .expect(1)
+            .create()
     }
 }
 
-fn dyfi_mock_base() -> Mock {
-    mock("GET", "/nic/update")
-        .with_status(200)
-        .with_header("content-type", "text/plain")
-        .match_query(Matcher::UrlEncoded(
-            "hostname".to_string(),
-            "mock.dy.fi,mock-some-more.dy.fi".to_string(),
-        ))
-        .expect(1)
-}
-
-fn get_ip_mock() -> Mock {
-    mock("GET", "/")
-        .with_status(200)
-        .with_header("content-type", "text/plain")
-        .with_body(MOCK_IP)
-        .expect(1)
-        .create()
-}
 
 #[test]
 fn test_update_nocfg() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base().with_body("nochg").create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base().with_body("nochg").create();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();
@@ -81,9 +95,10 @@ fn test_update_nocfg() {
 #[test]
 fn test_update_badauth() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base().with_body("badauth").create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base().with_body("badauth").create();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();
@@ -93,8 +108,9 @@ fn test_update_badauth() {
 #[test]
 fn test_update_nohost() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base()
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base()
         .match_query(Matcher::AnyOf(vec![
             Matcher::Missing,
             Matcher::Regex("".to_string()),
@@ -102,7 +118,7 @@ fn test_update_nohost() {
         ]))
         .with_body("nohost")
         .create();
-    let mut config = make_test_config();
+    let mut config = server.make_test_config();
     config.hostnames = vec![];
     let code = Dyfi::from(config).unwrap().run();
     get_ip.assert();
@@ -114,15 +130,16 @@ fn test_update_nohost() {
 #[test]
 fn test_update_notfqdn() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base()
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base()
         .match_query(Matcher::UrlEncoded(
             "hostname".to_string(),
             "something-outrageous,example.com".to_string(),
         ))
         .with_body("notfqdn")
         .create();
-    let mut config = make_test_config();
+    let mut config = server.make_test_config();
     config.hostnames = vec![
         "something-outrageous".to_string(),
         "example.com".to_string(),
@@ -137,11 +154,12 @@ fn test_update_notfqdn() {
 #[test]
 fn test_update_badip() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base()
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base()
         .with_body(format!("badip {}", MOCK_IP))
         .create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();
@@ -151,11 +169,12 @@ fn test_update_badip() {
 #[test]
 fn test_update_good() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base()
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base()
         .with_body(format!("good {}", MOCK_IP))
         .create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();
@@ -165,9 +184,10 @@ fn test_update_good() {
 #[test]
 fn test_update_dnserr() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base().with_body("dnserr").create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base().with_body("dnserr").create();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();
@@ -177,9 +197,10 @@ fn test_update_dnserr() {
 #[test]
 fn test_update_abuse() {
     log_init();
-    let get_ip = get_ip_mock();
-    let dyfi_nocfg = dyfi_mock_base().with_body("abuse").create();
-    let code = Dyfi::from(make_test_config()).unwrap().run();
+    let mut server = TestServer::new();
+    let get_ip = server.get_ip_mock();
+    let dyfi_nocfg = server.dyfi_mock_base().with_body("abuse").create();
+    let code = Dyfi::from(server.make_test_config()).unwrap().run();
     get_ip.assert();
     dyfi_nocfg.assert();
     dyfi_nocfg.matched();

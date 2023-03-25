@@ -1,5 +1,5 @@
 // Dyfi-client, a dynamic DNS updater for the dy.fi service.
-// Copyright (C) 2022  Ronja Koistinen
+// Copyright (C) 202-2023  Ronja Koistinen
 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -37,14 +37,14 @@ const LOOP_DELAY: u64 = 3600; // seconds
 fn main() {
     env_logger::init();
     debug!("Reading configuration from environment...");
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
 
     let config = Config {
-        dyfi_api: dotenv::var("DYFI_API").unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
-        public_ip_api: dotenv::var("PUBLIC_IP_API").unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
-        user: dotenv::var("DYFI_USER").expect("DYFI_USERNAME not set"),
-        password: dotenv::var("DYFI_PASSWORD").expect("DYFI_PASSWORD not set"),
-        hostnames: dotenv::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set")
+        dyfi_api: dotenvy::var("DYFI_API").unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
+        public_ip_api: dotenvy::var("PUBLIC_IP_API").unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
+        user: dotenvy::var("DYFI_USER").expect("DYFI_USERNAME not set"),
+        password: dotenvy::var("DYFI_PASSWORD").expect("DYFI_PASSWORD not set"),
+        hostnames: dotenvy::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set")
             .split(',')
             .map(std::string::ToString::to_string)
             .collect(),
