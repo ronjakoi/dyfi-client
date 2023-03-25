@@ -22,10 +22,12 @@ extern crate log;
 #[cfg(test)]
 mod tests;
 
-mod types;
 mod client;
-use types::Config;
+mod types;
+mod util;
 use client::Dyfi;
+use types::{Config, Hostname};
+use util::split_to_sorted_vec;
 
 const DEFAULT_PUBLIC_IP_API: &str = "http://checkip.amazonaws.com/";
 const DEFAULT_DYFI_API: &str = "https://www.dy.fi/nic/update";
@@ -39,15 +41,16 @@ fn main() {
     debug!("Reading configuration from environment...");
     dotenvy::dotenv().ok();
 
+    let hostnames: Vec<Hostname> =
+        split_to_sorted_vec(&dotenvy::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set"));
+
     let config = Config {
         dyfi_api: dotenvy::var("DYFI_API").unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
-        public_ip_api: dotenvy::var("PUBLIC_IP_API").unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
+        public_ip_api: dotenvy::var("PUBLIC_IP_API")
+            .unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
         user: dotenvy::var("DYFI_USER").expect("DYFI_USERNAME not set"),
         password: dotenvy::var("DYFI_PASSWORD").expect("DYFI_PASSWORD not set"),
-        hostnames: dotenvy::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set")
-            .split(',')
-            .map(std::string::ToString::to_string)
-            .collect(),
+        hostnames,
     };
     let mut dyfi = match Dyfi::from(config) {
         Ok(dyfi) => dyfi,

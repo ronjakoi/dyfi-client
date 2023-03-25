@@ -16,17 +16,20 @@
 
 use std::net::IpAddr;
 
+pub type Hostname = String;
+
 pub enum LoopStatus {
     Nop,
     Action(Result<DyfiResponse, DyfiError>),
 }
 
+#[derive(Debug)]
 pub struct Config {
     pub dyfi_api: String,
     pub public_ip_api: String,
     pub user: String,
     pub password: String,
-    pub hostnames: Vec<String>,
+    pub hostnames: Vec<Hostname>,
 }
 
 #[derive(Debug)]
@@ -36,22 +39,33 @@ pub enum DyfiResponse {
     NotFQDN,
     BadIP(IpAddr),
     NoChg,
-    Good(IpAddr),
+    /// The request was valid and processed successfully, and caused
+    /// the hostname to be pointed to the IP address returned.
+    /// If this was was an 'offline' request, the response does not contain
+    /// the IP address.
+    Good(Option<IpAddr>),
+    /// The request failed due to a technical problem at the dy.fi service.
     DNSErr,
     Abuse,
-    Other(String)
+    Other(String),
 }
 
 impl DyfiResponse {
     pub fn from(s: String) -> Self {
-        let result: Vec<&str> = s.trim().split_whitespace().collect();
+        let result: Vec<&str> = s.split_whitespace().collect();
         match result[..] {
             ["badauth"] => Self::BadAuth,
             ["nohost"] => Self::NoHost,
             ["notfqdn"] => Self::NotFQDN,
-            ["badip", ..] => Self::BadIP(result[1].parse().unwrap()),
+            ["badip", ip] => Self::BadIP(ip.parse().unwrap()),
             ["nochg"] => Self::NoChg,
-            ["good", ..] => Self::Good(result[1].parse().unwrap()),
+            ["good", ip] => Self::Good(Some(ip.parse().unwrap())),
+            ["good"] => {
+                // The Good response with no IP address is sent to an `offline`
+                // command which releases the IP address from the service.
+                // This program does not support this command.
+                unimplemented!()
+            }
             ["dnserr"] => Self::DNSErr,
             ["abuse"] => Self::Abuse,
             _ => Self::Other(s),
