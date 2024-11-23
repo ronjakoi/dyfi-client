@@ -41,11 +41,13 @@ fn main() {
     debug!("Reading configuration from environment...");
     dotenvy::dotenv().ok();
 
-    let hostnames: Vec<Hostname> =
-        split_to_sorted_vec(&dotenvy::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set"));
+    let hostnames: Vec<Hostname> = split_to_sorted_vec(
+        &dotenvy::var("DYFI_HOSTNAMES").expect("DYFI_HOSTNAMES not set"),
+    );
 
     let config = Config {
-        dyfi_api: dotenvy::var("DYFI_API").unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
+        dyfi_api: dotenvy::var("DYFI_API")
+            .unwrap_or_else(|_| DEFAULT_DYFI_API.to_string()),
         public_ip_api: dotenvy::var("PUBLIC_IP_API")
             .unwrap_or_else(|_| DEFAULT_PUBLIC_IP_API.to_string()),
         user: dotenvy::var("DYFI_USER").expect("DYFI_USERNAME not set"),

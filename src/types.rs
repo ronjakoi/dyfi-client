@@ -75,35 +75,52 @@ impl DyfiResponse {
     pub fn log(&self) {
         match self {
             Self::BadAuth => error!("dy.fi replied: Authentication failed"),
-            Self::NoHost => error!(
-                "dy.fi replied: No hostname parameter or hostname not allocated for user"
-            ),
-            Self::NotFQDN => error!("dy.fi replied: Given hostname not a valid .dy.fi FQDN"),
+            Self::NoHost => error!(concat!(
+                "dy.fi replied: No hostname parameter or hostname ",
+                "not allocated for user"
+            )),
+            Self::NotFQDN => {
+                error!("dy.fi replied: Given hostname not a valid .dy.fi FQDN");
+            }
             Self::BadIP(ip) => error!(
-                "dy.fi replied: IP address {} not valid or not registered to a Finnish organisation",
+                concat!(
+                    "dy.fi replied: IP address {} not valid or not registered ",
+                    "to a Finnish organisation"
+                ),
                 ip
             ),
             Self::NoChg => info!("dy.fi replied: No change"),
-            Self::Good(ip) => info!("dy.fi replied: Hostname(s) pointed at new address {}", ip),
-            Self::DNSErr => error!("dy.fi replied: Request failed due to technical problem"),
+            Self::Good(Some(ip)) => {
+                info!("dy.fi replied: Hostname(s) pointed at new address {ip}");
+            }
+            Self::Good(None) => {
+                unimplemented!()
+            }
+            Self::DNSErr => {
+                error!(
+                    "dy.fi replied: Request failed due to technical problem"
+                );
+            }
             Self::Abuse => error!("dy.fi replied: Request denied due to abuse"),
-            Self::Other(s) => error!("dy.fi replied with other message: '{}'", s)
+            Self::Other(s) => error!("dy.fi replied with other message: '{s}'"),
         }
     }
 }
 
 #[derive(Debug, PartialEq)]
+#[rustfmt::skip]
+#[repr(i32)]
 pub enum DyfiResponseCode {
     // These are from the dy.fi API
-    BadAuth = 1,
-    NoHost = 2,
-    NotFQDN = 3,
-    BadIP = 4,
-    Ok = 0,
-    DNSErr = 5,
-    Abuse = 6,
+    BadAuth       = 1,
+    NoHost        = 2,
+    NotFQDN       = 3,
+    BadIP         = 4,
+    Ok            = 0,
+    DNSErr        = 5,
+    Abuse         = 6,
     // This one is not
-    #[allow(dead_code)]
+    #[cfg(test)]
     OtherNonFatal = 99,
 }
 
@@ -138,7 +155,7 @@ impl From<reqwest::Error> for DyfiError {
 
 impl From<std::net::AddrParseError> for DyfiError {
     fn from(e: std::net::AddrParseError) -> Self {
-        DyfiError(format!("Error parsing current IP address: {}", e))
+        DyfiError(format!("Error parsing current IP address: {e}"))
     }
 }
 

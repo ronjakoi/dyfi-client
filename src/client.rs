@@ -43,14 +43,19 @@ impl Dyfi {
     }
 
     fn get_current_ip(&self) -> Result<IpAddr, DyfiError> {
-        let response = self.http_client.get(&self.config.public_ip_api).send()?;
+        let response =
+            self.http_client.get(&self.config.public_ip_api).send()?;
         if response.status().is_success() {
             match response.text() {
                 Ok(text) => match text.trim().parse() {
                     Ok(ip) => Ok(ip),
-                    Err(e) => Err(DyfiError(format!("Error parsing current IP: {}", e))),
+                    Err(e) => {
+                        Err(DyfiError(format!("Error parsing current IP: {e}")))
+                    }
                 },
-                Err(e) => Err(DyfiError(format!("Error while fetching current IP: {}", e))),
+                Err(e) => Err(DyfiError(format!(
+                    "Error while fetching current IP: {e}"
+                ))),
             }
         } else {
             Err(DyfiError(format!(
@@ -67,7 +72,9 @@ impl Dyfi {
         debug!("Initializing HTTP client...");
         Ok(Self {
             // init blocking reqwest http client
-            http_client: ClientBuilder::new().user_agent("Dyfi-client-rs").build()?,
+            http_client: ClientBuilder::new()
+                .user_agent("Dyfi-client-rs")
+                .build()?,
             previous_update_time: None,
             previous_ips: HashMap::new(),
             config,
