@@ -27,9 +27,9 @@ use std::thread::sleep;
 
 #[inline]
 #[cfg(not(test))]
-fn do_sleep(duration: u64) {
-    debug!("Sleeping {} seconds...", duration);
-    sleep(Duration::from_secs(duration));
+fn do_sleep(secs: u64) {
+    debug!("Sleeping {} seconds...", secs);
+    sleep(Duration::from_secs(secs));
 }
 
 #[inline]
