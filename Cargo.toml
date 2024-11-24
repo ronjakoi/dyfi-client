@@ -1,7 +1,7 @@
 [package]
 name = "dyfi-client"
 version = "0.4.0"
-authors = ["Ronja Koistinen <ronja@tuxera.com>"]
+authors = ["Ronja Koistinen <ronja.koistinen@kapsi.fi>"]
 edition = "2018"
 
 [dependencies]
