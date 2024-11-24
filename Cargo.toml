@@ -1,14 +1,14 @@
 [package]
 name = "dyfi-client"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Ronja Koistinen <ronja@tuxera.com>"]
 edition = "2018"
 
 [dependencies]
-reqwest = { version = "^0.11", features = ["blocking"] }
+reqwest = { version = "^0.12", features = ["blocking"] }
 dotenvy = "^0.15"
 log = "^0.4"
-env_logger = "^0.10"
+env_logger = "^0.11"
 
 [dev-dependencies]
 mockito = { version = "^1.0", default-features = false }
